@@ -103,16 +103,23 @@ function checkProps(obj, list) {
 
 router.get('/', function(req, res){
     const boats = get_boats(req)
-	.then( (boats) => { 
-
+	.then( (boats) => {
 		var entities = boats.items;
-		console.log(entities);
 		var data = [];
 		entities.forEach((entity) => {data.push(stringifyExample(entity.id, entity.name, entity.type, entity.length, req.protocol + '://' + req.get("host") + req.baseUrl + '/' + entity.id))});
-		console.log(data);
-        res.status(200).type('json').send('Status: 200 OK\n\n' + '[ ' + data + ' ]');
+        if (boats.next !== undefined) {
+        	res.status(200).type('json').send('Status: 200 OK\n\n' + '[ ' + data + ' "next": '+ '"' + boats.next + '"' + ' ]');	
+        } else {
+        	res.status(200).type('json').send('Status: 200 OK\n\n' + '[ ' + data + ' ]');
+        }
+        
     });
 });
+
+
+// if(boats[1].moreResults !== ds.Datastore.NO_MORE_RESULTS ){
+//                 boats.next = req.protocol + "://" + req.get("host") + req.baseUrl + "?cursor=" + entities[1].endCursor;
+//         } 
 
 router.get('/:id', function(req, res) {
 
@@ -153,7 +160,17 @@ router.put('/:lid/guests/:gid', function(req, res){
 });
 
 router.delete('/:id', function(req, res){
-    delete_boat(req.params.id).then(res.status(200).end())
+
+	const boat = get_boat(req.params.id)
+    .then( (boat) => { 
+    	try {
+    		const checkIfExists = boat[0].name;
+        	delete_boat(req.params.id).then(res.status(204).type('json').send('Status: 404 Bad Request { "Error": "The request object is missing at least one of the required attributes" }'));
+    	} catch {
+    		res.status(404).type('json').send('Status: 404 Not Found\n\n{\n "Error": "No boat with this boat_id exists" \n}');
+    	}
+    });  
+    
 });
 
 /* ------------- End Controller Functions ------------- */
