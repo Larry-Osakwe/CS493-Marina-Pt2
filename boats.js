@@ -116,13 +116,7 @@ router.get('/', function(req, res){
     });
 });
 
-
-// if(boats[1].moreResults !== ds.Datastore.NO_MORE_RESULTS ){
-//                 boats.next = req.protocol + "://" + req.get("host") + req.baseUrl + "?cursor=" + entities[1].endCursor;
-//         } 
-
 router.get('/:id', function(req, res) {
-
 	const boat = get_boat(req.params.id)
     .then( (boat) => { 
     	try {

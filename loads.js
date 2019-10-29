@@ -12,10 +12,15 @@ router.use(bodyParser.json());
 
 
 /* ------------- Begin load Model Functions ------------- */
-function post_load(name, description, price){
+function post_load(weight, content, delivery_date){
     var key = datastore.key(LOAD);
-	const new_load = {"name": name};
+	const new_load = {"weight": weight, "content": content, "delivery_date": delivery_date};
 	return datastore.save({"key":key, "data":new_load}).then(() => {return key});
+}
+
+function get_load(id){
+    const key = datastore.key([LOAD, parseInt(id,10)]);
+    return datastore.get(key);
 }
 
 function get_loads(req){
@@ -40,15 +45,33 @@ function get_loads(req){
 		});
 }
 
-function put_load(id, name){
+function put_load(id, weight){
     const key = datastore.key([LOAD, parseInt(id,10)]);
-    const load = {"name": name};
+    const load = {"weight": weight};
     return datastore.save({"key":key, "data":load});
 }
 
 function delete_load(id){
     const key = datastore.key([LOAD, parseInt(id,10)]);
     return datastore.delete(key);
+}
+
+function stringifyExample(idValue, weightValue, contentValue, delivery_dateValue, selfUrl){ 
+	return '{ "id": "' + idValue  + '", "weight": "' + weightValue + '", "content": "' + contentValue + '", "delivery_date": ' + delivery_dateValue + ', "self": "' + selfUrl + '"}'; 
+}
+
+// check request body function from: https://stackoverflow.com/questions/47502236/check-many-req-body-values-nodejs-api
+function checkProps(obj, list) {
+    if (typeof list === "string") {
+        list = list.split("|");
+    }
+    for (prop of list) {
+        let val = obj[prop];
+        if (val === null || val === undefined) {
+            return false;
+        }
+    }
+    return true;
 }
 
 /* ------------- End Model Functions ------------- */
@@ -62,14 +85,28 @@ router.get('/', function(req, res){
     });
 });
 
+router.get('/:id', function(req, res) {
+	const load = get_load(req.params.id)
+    .then( (load) => { 
+    	try {
+        	res.status(200).type('json').send('Status: 200 OK\n\n' + stringifyExample(req.params.id, load[0].weight, load[0].content, load[0].delivery_date, req.protocol + '://' + req.get("host") + req.baseUrl + '/' + req.params.id))
+    	} catch {
+    		res.status(404).send('Status: 404 Not Found\n\n{\n "Error": "No load with this load_id exists" \n}');
+    	}
+    });   
+});
+
 router.post('/', function(req, res){
-    console.log(req.body);
-    post_load(req.body.name)
-    .then( key => {res.status(200).send('{ "id": ' + key.id + ' }')} );
+	if (!checkProps(req.body, "weight|content|delivery_date")) {
+		res.status(400).send('Status: 400 Bad Request\n\n{\n "Error": "The request object is missing at least one of the required attributes" \n}');
+	} else {
+		post_load(req.body.weight, req.body.content, req.body.delivery_date)
+	    .then( key => {res.status(201).type('json').send('Status: 201 Created\n\n' + stringifyExample(key.id, req.body.weight, req.body.content, req.body.delivery_date, req.protocol + '://' + req.get("host") + req.baseUrl))} );	
+	}    
 });
 
 router.put('/:id', function(req, res){
-    put_load(req.params.id, req.body.name)
+    put_load(req.params.id, req.body.weight)
     .then(res.status(200).end());
 });
 
