@@ -103,8 +103,14 @@ function checkProps(obj, list) {
 
 router.get('/', function(req, res){
     const boats = get_boats(req)
-	.then( (boats) => {
-        res.status(200).json(boats);
+	.then( (boats) => { 
+
+		var entities = boats.items;
+		console.log(entities);
+		var data = [];
+		entities.forEach((entity) => {data.push(stringifyExample(entity.id, entity.name, entity.type, entity.length, req.protocol + '://' + req.get("host") + req.baseUrl + '/' + entity.id))});
+		console.log(data);
+        res.status(200).type('json').send('Status: 200 OK\n\n' + '[ ' + data + ' ]');
     });
 });
 
@@ -113,7 +119,7 @@ router.get('/:id', function(req, res) {
 	const boat = get_boat(req.params.id)
     .then( (boat) => { 
     	try {
-        	res.status(200).type('json').send('Status: 200 OK\n\n' + stringifyExample(req.params.id, boat[0].name, boat[0].type, boat[0].length, req.protocol + '//' + req.get("host") + req.baseUrl + '/' + req.params.id))
+        	res.status(200).type('json').send('Status: 200 OK\n\n' + stringifyExample(req.params.id, boat[0].name, boat[0].type, boat[0].length, req.protocol + '://' + req.get("host") + req.baseUrl + '/' + req.params.id))
     	} catch {
     		res.status(404).send('Status: 404 Not Found\n\n{\n "Error": "No boat with this boat_id exists" \n}');
     	}
@@ -132,7 +138,7 @@ router.post('/', function(req, res){
 		res.status(400).send('Status: 400 Bad Request\n\n{\n "Error": "The request object is missing at least one of the required attributes" \n}');
 	} else {
 		post_boat(req.body.name, req.body.type, req.body.length)
-	    .then( key => {res.status(201).type('json').send('Status: 201 Created\n\n' + stringifyExample(key.id, req.body.name, req.body.type, req.body.length, req.protocol + '//' + req.get("host") + req.baseUrl))} );	
+	    .then( key => {res.status(201).type('json').send('Status: 201 Created\n\n' + stringifyExample(key.id, req.body.name, req.body.type, req.body.length, req.protocol + '://' + req.get("host") + req.baseUrl))} );	
 	}    
 });
 
