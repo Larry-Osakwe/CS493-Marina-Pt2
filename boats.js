@@ -19,6 +19,11 @@ function post_boat(name, type, length){
 	return datastore.save({"key":key, "data":new_boat}).then(() => {return key});
 }
 
+function get_boat(id){
+    const key = datastore.key([BOAT, parseInt(id,10)]);
+    return datastore.get(key);
+}
+
 function get_boats(req){
     var q = datastore.createQuery(BOAT).limit(2);
     const results = {};
@@ -103,6 +108,18 @@ router.get('/', function(req, res){
     });
 });
 
+router.get('/:id', function(req, res) {
+
+	const boat = get_boat(req.params.id)
+    .then( (boat) => { 
+    	try {
+        	res.status(200).type('json').send('Status: 200 OK\n\n' + stringifyExample(req.params.id, boat[0].name, boat[0].type, boat[0].length, req.protocol + '//' + req.get("host") + req.baseUrl + '/' + req.params.id))
+    	} catch {
+    		res.status(404).send('Status: 404 Not Found\n\n{\n "Error": "No boat with this boat_id exists" \n}');
+    	}
+    });   
+});
+
 router.get('/:id/guests', function(req, res){
     const boats = get_boat_guests(req, req.params.id)
 	.then( (boats) => {
@@ -111,15 +128,12 @@ router.get('/:id/guests', function(req, res){
 });
 
 router.post('/', function(req, res){
-	//let typeu = req.body.type;
 	if (!checkProps(req.body, "name|type|length")) {
-		res.status(400).send('Status: 400 Bad Request\n\n {\n "Error": "The request object is missing at least one of the required attributes" \n}');
+		res.status(400).send('Status: 400 Bad Request\n\n{\n "Error": "The request object is missing at least one of the required attributes" \n}');
 	} else {
 		post_boat(req.body.name, req.body.type, req.body.length)
-	    // .then( key => {res.status(200).send('{ "id": ' + key.id + ' }')} );
 	    .then( key => {res.status(201).type('json').send('Status: 201 Created\n\n' + stringifyExample(key.id, req.body.name, req.body.type, req.body.length, req.protocol + '//' + req.get("host") + req.baseUrl))} );	
-	}
-    
+	}    
 });
 
 router.put('/:id', function(req, res){
