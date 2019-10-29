@@ -108,7 +108,7 @@ router.get('/', function(req, res){
 		var data = [];
 		entities.forEach((entity) => {data.push(stringifyExample(entity.id, entity.name, entity.type, entity.length, req.protocol + '://' + req.get("host") + req.baseUrl + '/' + entity.id))});
         if (boats.next !== undefined) {
-        	res.status(200).type('json').send('Status: 200 OK\n\n' + '[ ' + data + ' "next": '+ '"' + boats.next + '"' + ' ]');	
+        	res.status(200).type('json').send('Status: 200 OK\n\n' + '[ ' + data + ', "next": '+ '"' + boats.next + '"' + ' ]');	
         } else {
         	res.status(200).type('json').send('Status: 200 OK\n\n' + '[ ' + data + ' ]');
         }

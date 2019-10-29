@@ -24,7 +24,7 @@ function get_load(id){
 }
 
 function get_loads(req){
-    var q = datastore.createQuery(LOAD).limit(2);
+    var q = datastore.createQuery(LOAD).limit(3);
     const results = {};
     var prev;
     if(Object.keys(req.query).includes("cursor")){
@@ -81,7 +81,14 @@ function checkProps(obj, list) {
 router.get('/', function(req, res){
     const loads = get_loads(req)
 	.then( (loads) => {
-        res.status(200).json(loads);
+		var entities = loads.items;
+		var data = [];
+		entities.forEach((entity) => {data.push(stringifyExample(entity.id, entity.weight, entity.content, entity.delivery_date, req.protocol + '://' + req.get("host") + req.baseUrl + '/' + entity.id))});
+        if (loads.next !== undefined) {
+        	res.status(200).type('json').send('Status: 200 OK\n\n' + '[ ' + data + ', "next": '+ '"' + loads.next + '"' + ' ]');	
+        } else {
+        	res.status(200).type('json').send('Status: 200 OK\n\n' + '[ ' + data + ' ]');
+        }
     });
 });
 
