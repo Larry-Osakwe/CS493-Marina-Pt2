@@ -6,7 +6,7 @@ const ds = require('./datastore');
 const datastore = ds.datastore;
 
 const BOAT = "Boat";
-const GUEST = "Guest";
+const LOAD = "Load";
 
 router.use(bodyParser.json());
 
@@ -39,19 +39,19 @@ function get_boats(req){
 		});
 }
 
-function get_boat_guests(req, id){
+function get_boat_loads(req, id){
     const key = datastore.key([BOAT, parseInt(id,10)]);
     return datastore.get(key)
     .then( (boats) => {
         const boat = boats[0];
-        const guest_keys = boat.guests.map( (g_id) => {
-            return datastore.key([GUEST, parseInt(g_id,10)]);
+        const load_keys = boat.loads.map( (g_id) => {
+            return datastore.key([LOAD, parseInt(g_id,10)]);
         });
-        return datastore.get(guest_keys);
+        return datastore.get(load_keys);
     })
-    .then((guests) => {
-        guests = guests[0].map(ds.fromDatastore);
-        return guests;
+    .then((loads) => {
+        loads = loads[0].map(ds.fromDatastore);
+        return loads;
     });
 }
 
@@ -70,10 +70,10 @@ function put_reservation(lid, gid){
     const l_key = datastore.key([BOAT, parseInt(lid,10)]);
     return datastore.get(l_key)
     .then( (boat) => {
-        if( typeof(boat[0].guests) === 'undefined'){
-            boat[0].guests = [];
+        if( typeof(boat[0].loads) === 'undefined'){
+            boat[0].loads = [];
         }
-        boat[0].guests.push(gid);
+        boat[0].loads.push(gid);
         return datastore.save({"key":l_key, "data":boat[0]});
     });
 
@@ -133,8 +133,8 @@ router.get('/:id', function(req, res) {
     });   
 });
 
-router.get('/:id/guests', function(req, res){
-    const boats = get_boat_guests(req, req.params.id)
+router.get('/:id/loads', function(req, res){
+    const boats = get_boat_loads(req, req.params.id)
 	.then( (boats) => {
         res.status(200).json(boats);
     });
@@ -154,7 +154,7 @@ router.put('/:id', function(req, res){
     .then(res.status(200).end());
 });
 
-router.put('/:lid/guests/:gid', function(req, res){
+router.put('/:lid/loads/:gid', function(req, res){
     put_reservation(req.params.lid, req.params.gid)
     .then(res.status(200).end());
 });
