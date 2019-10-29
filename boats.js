@@ -25,7 +25,7 @@ function get_boat(id){
 }
 
 function get_boats(req){
-    var q = datastore.createQuery(BOAT).limit(2);
+    var q = datastore.createQuery(BOAT).limit(3);
     const results = {};
     if(Object.keys(req.query).includes("cursor")){
         q = q.start(req.query.cursor);
