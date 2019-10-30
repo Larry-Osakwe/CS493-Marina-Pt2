@@ -150,7 +150,6 @@ router.post('/', function(req, res){
 	    	data.then(boatData => {
 	    		res.status(201).type('json').send('Status: 201 Created\n\n' + stringifyExample(key.id, boatData[0].name, boatData[0].type, boatData[0].length, boatData[0].loads, req.protocol + '://' + req.get("host") + req.baseUrl));	
 	    	});
-
 	    });	
 	}    
 });

@@ -14,7 +14,8 @@ router.use(bodyParser.json());
 /* ------------- Begin load Model Functions ------------- */
 function post_load(weight, content, delivery_date){
     var key = datastore.key(LOAD);
-	const new_load = {"weight": weight, "content": content, "delivery_date": delivery_date};
+    var data = [];
+	const new_load = {"weight": weight, "carrier": data, "content": content, "delivery_date": delivery_date};
 	return datastore.save({"key":key, "data":new_load}).then(() => {return key});
 }
 
@@ -56,9 +57,19 @@ function delete_load(id){
     return datastore.delete(key);
 }
 
-function stringifyExample(idValue, weightValue, contentValue, delivery_dateValue, selfUrl){ 
-	return '{ "id": "' + idValue  + '", "weight": "' + weightValue + '", "content": "' + contentValue + '", "delivery_date": ' + delivery_dateValue + ', "self": "' + selfUrl + '"}'; 
+// function stringifyExample(idValue, weightValue, contentValue, delivery_dateValue, selfUrl){ 
+// 	return '{ "id": "' + idValue  + '", "weight": "' + weightValue + '", "content": "' + contentValue + '", "delivery_date": ' + delivery_dateValue + ', "self": "' + selfUrl + '"}'; 
+// }
+
+function stringifyExample(idValue, weightValue, boatValue, contentValue, delivery_dateValue, selfUrl){
+    var entities = boatValue;
+    var data = [];
+    var boatUrl = "http://localhost:8080/boats/";  
+    //entities.forEach((entity) => {data.push('{ "id": "' + entity + '", "self": "'+ boatUrl + entity + '"}')});
+    return '{ "id": "' + idValue  + '", "weight": ' + weightValue + ', "carrier": [' + data + '], "content": "' + contentValue + '", "delivery_date": "' + delivery_dateValue + '", "self": "' + selfUrl + '"}'; 
 }
+
+
 
 // check request body function from: https://stackoverflow.com/questions/47502236/check-many-req-body-values-nodejs-api
 function checkProps(obj, list) {
@@ -108,7 +119,12 @@ router.post('/', function(req, res){
 		res.status(400).send('Status: 400 Bad Request\n\n{\n "Error": "The request object is missing at least one of the required attributes" \n}');
 	} else {
 		post_load(req.body.weight, req.body.content, req.body.delivery_date)
-	    .then( key => {res.status(201).type('json').send('Status: 201 Created\n\n' + stringifyExample(key.id, req.body.weight, req.body.content, req.body.delivery_date, req.protocol + '://' + req.get("host") + req.baseUrl))} );	
+	    .then( key => {
+            var data = datastore.get(key);
+            data.then(loadData => {
+                res.status(201).type('json').send('Status: 201 Created\n\n' + stringifyExample(key.id, loadData[0].weight, loadData[0].carrier, loadData[0].content, loadData[0].delivery_date, req.protocol + '://' + req.get("host") + req.baseUrl))
+            });
+        });       	
 	}    
 });
 
