@@ -75,8 +75,15 @@ function put_load(bid, lid){
         if( typeof(boat[0].loads) === 'undefined'){
             boat[0].loads = [];
         }
-        boat[0].loads.push(lid);
-        return datastore.save({"key":l_key, "data":boat[0]});
+        
+        var newArrs = boat[0].loads;
+
+        if (newArrs.find(newArr => newArr === lid)) {
+        	return -1;
+        } else {
+        	boat[0].loads.push(lid);
+        	return datastore.save({"key":l_key, "data":boat[0]});
+        }
     });
 
 }
@@ -159,9 +166,16 @@ router.put('/:id', function(req, res){
     .then(res.status(200).end());
 });
 
+
 router.put('/:bid/loads/:lid', function(req, res){
     put_load(req.params.bid, req.params.lid)
-    .then(res.status(200).end());
+    .then( key => {
+    	if (key == -1) {
+    		res.status(403).send('Status: 403 Bad Request\n\n{\n "Error": "This load already has an assigned boat" \n}');	
+    	} else {
+    		res.status(204).type('json').end();
+    	}
+    });
 });
 
 router.delete('/:id', function(req, res){
