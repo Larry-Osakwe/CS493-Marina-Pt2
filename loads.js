@@ -118,7 +118,15 @@ router.put('/:id', function(req, res){
 });
 
 router.delete('/:id', function(req, res){
-    delete_load(req.params.id).then(res.status(200).end())
+	const load = get_load(req.params.id)
+    .then( (load) => { 
+    	try {
+    		const checkIfExists = load[0].weight;
+        	delete_load(req.params.id).then(res.status(204).type('json').send('Status: 404 Bad Request { "Error": "The request object is missing at least one of the required attributes" }'));
+    	} catch {
+    		res.status(404).type('json').send('Status: 404 Not Found\n\n{\n "Error": "No load with this load_id exists" \n}');
+    	}
+    });  
 });
 
 /* ------------- End Controller Functions ------------- */
