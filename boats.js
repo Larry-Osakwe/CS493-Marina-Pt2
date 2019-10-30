@@ -15,7 +15,8 @@ router.use(bodyParser.json());
 /* ------------- Begin Boat Model Functions ------------- */
 function post_boat(name, type, length){
     var key = datastore.key(BOAT);
-	const new_boat = {"name": name, "type": type, "length": length};
+    var data = [];
+	const new_boat = {"name": name, "type": type, "length": length, "loads": data};
 	return datastore.save({"key":key, "data":new_boat}).then(() => {return key});
 }
 
@@ -57,7 +58,8 @@ function get_boat_loads(req, id){
 
 function put_boat(id, name, type, length){
     const key = datastore.key([BOAT, parseInt(id,10)]);
-    const boat = {"name": name, "type": type, "length": length};
+    var data = [];
+    const boat = {"name": name, "type": type, "length": length, "loads": data};
     return datastore.save({"key":key, "data":boat});
 }
 
@@ -66,21 +68,25 @@ function delete_boat(id){
     return datastore.delete(key);
 }
 
-function put_reservation(lid, gid){
-    const l_key = datastore.key([BOAT, parseInt(lid,10)]);
+function put_load(bid, lid){
+    const l_key = datastore.key([BOAT, parseInt(bid,10)]);
     return datastore.get(l_key)
     .then( (boat) => {
         if( typeof(boat[0].loads) === 'undefined'){
             boat[0].loads = [];
         }
-        boat[0].loads.push(gid);
+        boat[0].loads.push(lid);
         return datastore.save({"key":l_key, "data":boat[0]});
     });
 
 }
 
-function stringifyExample(idValue, nameValue, typeValue, lengthValue, selfUrl){ 
-	return '{ "id": "' + idValue  + '", "name": "' + nameValue + '", "type": "' + typeValue + '", "length": ' + lengthValue + ', "self": "' + selfUrl + '"}'; 
+function stringifyExample(idValue, nameValue, typeValue, lengthValue, loadValue, selfUrl){
+	var entities = loadValue;
+	var data = [];
+	var loadUrl = "http://localhost:8080/loads/";  
+	entities.forEach((entity) => {data.push('{ "id": "' + entity + '", "self": "'+ loadUrl + entity + '"}')});
+	return '{ "id": "' + idValue  + '", "name": "' + nameValue + '", "type": "' + typeValue + '", "length": ' + lengthValue + ', "loads": [' + data + '], "self": "' + selfUrl + '"}'; 
 }
 
 // check request body function from: https://stackoverflow.com/questions/47502236/check-many-req-body-values-nodejs-api
@@ -106,7 +112,7 @@ router.get('/', function(req, res){
 	.then( (boats) => {
 		var entities = boats.items;
 		var data = [];
-		entities.forEach((entity) => {data.push(stringifyExample(entity.id, entity.name, entity.type, entity.length, req.protocol + '://' + req.get("host") + req.baseUrl + '/' + entity.id))});
+		entities.forEach((entity) => {data.push(stringifyExample(entity.id, entity.name, entity.type, entity.length, entity.loads, req.protocol + '://' + req.get("host") + req.baseUrl + '/' + entity.id))});
         if (boats.next !== undefined) {
         	res.status(200).type('json').send('Status: 200 OK\n\n' + '[ ' + data + ', "next": '+ '"' + boats.next + '"' + ' ]');	
         } else {
@@ -120,7 +126,7 @@ router.get('/:id', function(req, res) {
 	const boat = get_boat(req.params.id)
     .then( (boat) => { 
     	try {
-        	res.status(200).type('json').send('Status: 200 OK\n\n' + stringifyExample(req.params.id, boat[0].name, boat[0].type, boat[0].length, req.protocol + '://' + req.get("host") + req.baseUrl + '/' + req.params.id))
+        	res.status(200).type('json').send('Status: 200 OK\n\n' + stringifyExample(req.params.id, boat[0].name, boat[0].type, boat[0].length, boat[0].loads, req.protocol + '://' + req.get("host") + req.baseUrl + '/' + req.params.id))
     	} catch {
     		res.status(404).send('Status: 404 Not Found\n\n{\n "Error": "No boat with this boat_id exists" \n}');
     	}
@@ -139,7 +145,13 @@ router.post('/', function(req, res){
 		res.status(400).send('Status: 400 Bad Request\n\n{\n "Error": "The request object is missing at least one of the required attributes" \n}');
 	} else {
 		post_boat(req.body.name, req.body.type, req.body.length)
-	    .then( key => {res.status(201).type('json').send('Status: 201 Created\n\n' + stringifyExample(key.id, req.body.name, req.body.type, req.body.length, req.protocol + '://' + req.get("host") + req.baseUrl))} );	
+	    .then( key => {
+	    	var data = datastore.get(key);
+	    	data.then(boatData => {
+	    		res.status(201).type('json').send('Status: 201 Created\n\n' + stringifyExample(key.id, boatData[0].name, boatData[0].type, boatData[0].length, boatData[0].loads, req.protocol + '://' + req.get("host") + req.baseUrl));	
+	    	});
+
+	    });	
 	}    
 });
 
@@ -148,8 +160,8 @@ router.put('/:id', function(req, res){
     .then(res.status(200).end());
 });
 
-router.put('/:lid/loads/:gid', function(req, res){
-    put_reservation(req.params.lid, req.params.gid)
+router.put('/:bid/loads/:lid', function(req, res){
+    put_load(req.params.bid, req.params.lid)
     .then(res.status(200).end());
 });
 
